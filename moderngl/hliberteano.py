@@ -15,11 +15,8 @@ def HilbertCurve(n):
     return points
 
 def Hilbert(ps, n, points):
-    if n == 0:
-        points.extend([ps[0][0], ps[0][1], len(points)])
-        points.extend([ps[1][0], ps[1][1], len(points)])
-        points.extend([ps[2][0], ps[2][1], len(points)])
-        points.extend([ps[3][0], ps[3][1], len(points)])
+    if n == 0:        
+        points.extend(ps)
     else:
         c = (ps[2] + ps[0]) * .5
 
@@ -49,12 +46,7 @@ def PeanoCurve(n):
 
 def Peano(ps, n, points):
     if n == 0:
-        points.extend([ps[0][0], ps[0][1], len(points)])
-        points.extend([ps[1][0], ps[1][1], len(points)])
-        points.extend([ps[2][0], ps[2][1], len(points)])
-        points.extend([ps[3][0], ps[3][1], len(points)])
-        points.extend([ps[4][0], ps[4][1], len(points)])
-        points.extend([ps[5][0], ps[5][1], len(points)])
+        points.extend(ps)
     else:
         c = []
         c.append(ps[0])
@@ -102,8 +94,8 @@ def line_map_lissajous(px, py, z):
     arc = z * 2 * np.math.pi
     return np.array([np.math.cos(arc * px), np.math.sin(arc * py)])
 
-points = HilbertCurve(8)
-#points = PeanoCurve(5)
+#points = HilbertCurve(9)
+points = PeanoCurve(6)
 
 print(f"there are {len(points)} points")
 
@@ -112,16 +104,16 @@ segment = np.array([[-1, 1],[1, -1]])
 
 line_diff = []
 
-for idx in range(0, len(points), 3):
-    z = points[idx + 2] / len(points)
+for idx in range(len(points)):
+    z = idx / len(points)
     coords = line_map_lissajous(221, 222, z)
     #coords = line_map_circle(.1, 1000, z)
-    #coords = line_map_segment(segment, z)
-    coords = np.array([points[idx], points[idx + 1]]) - coords
-    line_diff.extend([coords[0], coords[1], 0])
+    #coords = line_map_segment(segment, z)    
+    line_diff.append(np.array([coords[0], coords[1], idx]))
 
-points = np.ndarray.flatten(np.array(points))
-line_diff = np.ndarray.flatten(np.array(line_diff))
+#point_data = list(zip(points, line_diff))
+point_data = np.column_stack((points, line_diff))
+point_data = np.ndarray.flatten(np.array(point_data))
 
 period = 10
 
@@ -136,13 +128,17 @@ class Fractal(Example):
             vertex_shader='''
                 #version 330
 
-                in vec3 in_vert;
+                uniform float Lerp;
+
+                in vec4 in_vert;
+                in float in_idx;
                 out vec3 v_text;
 
-                void main() {                    
-                    gl_Position = vec4(in_vert.xy, 0.0, 1.0);
+                void main() {
+                    vec2 pos = mix(in_vert.xy, in_vert.zw, Lerp);
+                    gl_Position = vec4(pos, 0.0, 1.0);
                     v_text.xy = (in_vert.xy + 1) / 2;
-                    v_text.z = in_vert.z;
+                    v_text.z = in_idx;
                 }
             ''',
             fragment_shader='''
@@ -178,16 +174,18 @@ class Fractal(Example):
 
         self.timme = self.prog['Time']
         self.countt = self.prog['Count']
+        self.lerp = self.prog['Lerp']
 
         self.countt.value = len(points)
 
         #self.texture = self.load_texture_2d('grass.jpg')
         #self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
 
-        vertices = np.array(points)
+        vertices = point_data
 
         self.vbo = self.ctx.buffer(vertices.astype('f4'))
-        self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
+        #self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
+        self.vao = self.ctx._vertex_array(self.prog, [(self.vbo, "4f 1f", "in_vert", "in_idx")])
 
     def render(self, time, frame_time):
         self.ctx.clear(0.0, 0.0, 0.0)
@@ -199,16 +197,13 @@ class Fractal(Example):
         else:
             k = (t - len(points)) / len(points)
         self.timme.value = t
-        vertices = points - line_diff * k
-
-        self.vbo = self.ctx.buffer(vertices.astype('f4'))
-        self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
+        self.lerp.value = k
 
         #self.texture.use()
         self.vao.render(moderngl.LINE_STRIP)
 
-        self.vao.release()
-        self.vbo.release()
+        #self.vao.release()
+        #self.vbo.release()
 
 if __name__ == '__main__':
     Fractal.run()
