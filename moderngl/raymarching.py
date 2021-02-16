@@ -90,18 +90,18 @@ class Raymarch(Example):
                         vec3 offsetDir = normalize(LightPos - offset);
                         float distLight = raymarch(offset, offsetDir);
                         
+                        float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
+                        vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
+                        float specular = clamp(dot(-ray, reflect), 0, 1);
+                        float shade = diffuse + pow(specular, 64);
                         
-                        if (distLight >= length(hitToLight))
+                        //f_color = vec4(shade*hitLightDir, 1);
+                        
+                        if (distLight <= length(hitToLight))
                         {                            
-                            float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
-                            vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
-                            float specular = clamp(dot(-ray, reflect), 0, 1);
-                            float shade = diffuse + pow(specular, 64);
-                            f_color = vec4(vec3(shade), 1);
-                            //f_color = vec4(shade*hitLightDir, 1);
+                            shade *= .33;
                         }
-                        else
-                            f_color = vec4(0,0,0,1);
+                        f_color = vec4(vec3(shade), 1);
                     }
                     else
                         f_color = vec4(0,0,0,1);
@@ -143,7 +143,7 @@ class Raymarch(Example):
         scale = 1
         c = cos(time * scale) * rad
         s = sin(time * scale) * rad
-        self.lightpos.value = (c, -8, s + 30)
+        self.lightpos.value = (c, 0, s + 30)
 
         self.vao.render(moderngl.TRIANGLE_FAN)
 
