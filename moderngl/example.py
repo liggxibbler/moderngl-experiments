@@ -16,5 +16,6 @@ class Example(mglw.WindowConfig):
         super().__init__(**kwargs)
 
     @classmethod
-    def run(cls):
+    def run(cls, window_size):
+        Example.windows_size = window_size
         mglw.run_window_config(cls)
