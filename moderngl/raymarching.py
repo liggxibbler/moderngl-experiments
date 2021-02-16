@@ -48,11 +48,10 @@ class Raymarch(Example):
                     return point.y + 20;
                 }
 
-                float distance(vec3 ray, float step)
+                float distance(vec3 pos)
                 {
-                    vec3 pos = ray * step;
-                    //return min(distance_to_sphere(pos), distance_to_plane(pos));
-                    return distance_to_sphere(pos);
+                    return min(distance_to_sphere(pos), distance_to_plane(pos));
+                    //return distance_to_sphere(pos);
                 }
 
                 void main() {
@@ -62,7 +61,7 @@ class Raymarch(Example):
 
                     while (step < MAX_STEP && dist > MIN_DIST)
                     {
-                        dist = distance(normalize(ray), step);
+                        dist = distance(ray * step);
                         step = step + dist;
                     }
 
@@ -71,7 +70,13 @@ class Raymarch(Example):
                     else
                     {
                         vec3 hit = ray * step;
-                        vec3 normal = (hit - Sphere.xyz) / Sphere.w;
+                        
+                        //vec3 normal = (hit - Sphere.xyz) / Sphere.w;
+                        float dx = distance(hit + vec3(MIN_DIST, 0, 0));
+                        float dy = distance(hit + vec3(0, MIN_DIST, 0));
+                        float dz = distance(hit + vec3(0, 0, MIN_DIST));
+                        vec3 normal = normalize((vec3(dx, dy, dz) - distance(hit)) / MIN_DIST);
+                        
                         vec3 hitToLight = normalize(LightPos - hit);
                         float diffuse = clamp(dot(hitToLight, normal), 0, 1);
                         vec3 reflect = normalize(2 * dot(hitToLight, normal) * normal - hitToLight);
@@ -95,7 +100,7 @@ class Raymarch(Example):
         self.camera.value = 5
 
         self.stepinfo = self.prog['StepInfo']
-        self.stepinfo.value = (1000, .01, 0, 0)
+        self.stepinfo.value = (1000, .0001, 0, 0)
 
         self.lightpos = self.prog['LightPos']
         self.lightpos.value = (0, 0, 0)
