@@ -18,4 +18,5 @@ class Example(mglw.WindowConfig):
     @classmethod
     def run(cls, window_size):
         Example.windows_size = window_size
+        Example.aspect_ratio = window_size[0] / window_size[1] 
         mglw.run_window_config(cls)
