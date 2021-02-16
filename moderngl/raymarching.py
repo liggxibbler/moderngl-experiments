@@ -65,13 +65,13 @@ class Raymarch(Example):
                     {
                         vec3 hit = ray * step;
                         vec3 normal = (hit - Sphere.xyz) / Sphere.w;
-                        float diffuse = clamp(dot(normalize(LightPos - hit), normal), 0, 1);                        
-                        vec3 incident = normalize(LightPos - hit);
-                        vec3 reflect = 2 * dot(incident, normal) * normal - incident;
-                        float gloss = pow(clamp(dot(-ray, reflect), 0, 1), 2);
-                        float shade = (diffuse + gloss) / 2;
-                        f_color = vec4(shade, shade, shade, 1);
-                        //f_color = vec4(normal, diffuse);
+                        vec3 hitToLight = normalize(LightPos - hit);
+                        float diffuse = clamp(dot(hitToLight, normal), 0, 1);
+                        vec3 reflect = normalize(2 * dot(hitToLight, normal) * normal - hitToLight);
+                        float specular = clamp(dot(-ray, reflect), 0, 1);
+                        float shade = diffuse + pow(specular, 64);
+                        //f_color = vec4(normal, LightPos.x);
+                        f_color = vec4(vec3(shade), 1);
                     }
                 }
             ''',
