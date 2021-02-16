@@ -43,9 +43,16 @@ class Raymarch(Example):
                     return length(point - Sphere.xyz) - Sphere.w;
                 }
 
+                float distance_to_plane(vec3 point)
+                {
+                    return point.y + 20;
+                }
+
                 float distance(vec3 ray, float step)
                 {
-                    return distance_to_sphere(ray * step);
+                    vec3 pos = ray * step;
+                    //return min(distance_to_sphere(pos), distance_to_plane(pos));
+                    return distance_to_sphere(pos);
                 }
 
                 void main() {
