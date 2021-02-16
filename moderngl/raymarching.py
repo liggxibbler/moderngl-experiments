@@ -46,7 +46,7 @@ class Raymarch(Example):
 
                 float distance_to_plane(vec3 point)
                 {
-                    return point.y + 25;
+                    return point.y + 10;
                 }
 
                 float distance(vec3 pos)
@@ -139,11 +139,11 @@ class Raymarch(Example):
 
         self.ctx.clear(0.0, 0.0, 0.0)
 
-        rad = 30
+        rad = 50
         scale = 1
-        c = cos(time * scale)
-        s = sin(time * scale)
-        self.lightpos.value = (rad * s, 20, 30 + rad * c)
+        c = cos(time * scale) * rad
+        s = sin(time * scale) * rad
+        self.lightpos.value = (c, -8, s + 30)
 
         self.vao.render(moderngl.TRIANGLE_FAN)
 
