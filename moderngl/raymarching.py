@@ -30,6 +30,7 @@ class Raymarch(Example):
 
                 #define MAX_STEP StepInfo.x
                 #define MIN_DIST StepInfo.y
+                #define SMIN_K 10
 
                 uniform float CameraDistance;
                 uniform vec3[2] Plane;
@@ -40,6 +41,12 @@ class Raymarch(Example):
 
                 in vec2 v_pixpos;
                 out vec4 f_color;
+
+                float smin(float a, float b, float k)
+                {                    
+                    float h = clamp(0.5 + 0.5*(a-b)/k, 0.0, 1.0);
+                    return mix(a, b, h) - k*h*(1.0-h);                
+                }
 
                 float distance_to_torus(vec3 p)
                 {
@@ -62,9 +69,9 @@ class Raymarch(Example):
 
                 float distance(vec3 pos)
                 {
-                    //return distance_to_plane(pos) - distance_to_sphere(pos);
-                    //return min(distance_to_sphere(pos), distance_to_plane(pos));
-                    return distance_to_torus(pos);
+                    float dist = smin(distance_to_sphere(pos), distance_to_plane(pos), SMIN_K);
+                    dist = smin(dist, distance_to_torus(pos), SMIN_K);                    
+                    return dist;
                 }
 
                 float raymarch(vec3 pos, vec3 ray)
@@ -111,7 +118,7 @@ class Raymarch(Example):
                         
                         if (distLight <= length(hitToLight))
                         {                            
-                            shade *= .0;
+                            shade = 0;
                         }
                         f_color = vec4(vec3(shade), 1);
                         //f_color = vec4(normal, 1);
@@ -126,22 +133,22 @@ class Raymarch(Example):
         self.screen_res.value = (.4, .3)
 
         self.sphere = self.prog['Sphere']
-        self.sphere.value = (0, 0, 50, 40)
+        self.sphere.value = (0, 0, 20, 5)
 
         self.torus = self.prog['Torus']
-        self.torus.value = [(0, -10, 50), (0, 0, -1), (30, 10, 0)]
+        self.torus.value = [(0, 0, 20), (.707, 0, -.707), (10, 2, 0)]
 
         self.plane = self.prog['Plane']
-        self.plane.value = [(0,0,50), (-.57, .57, -.57)]
+        self.plane.value = [(0,-20,0), (0, 1, 0)]
 
         self.camera = self.prog['CameraDistance']
-        self.camera.value = .1
+        self.camera.value = .3
 
         self.stepinfo = self.prog['StepInfo']
         self.stepinfo.value = (1000, .001, 0, 0)
 
         self.lightpos = self.prog['LightPos']
-        self.lightpos.value = (0, 0, 0)
+        self.lightpos.value = (0, 10, 0)
 
         vertices = np.array([-1, 1, -1, -1, 1, -1, 1, 1])
 
@@ -153,11 +160,13 @@ class Raymarch(Example):
 
         self.ctx.clear(0.0, 0.0, 0.0)
 
-        rad = 50
-        scale = .5
+        rad = 40
+        scale = .33
         c = cos(time) * pi/4
-        self.lightpos.value = (cos(time * scale) * rad, 0, 50 + sin(time * scale) * rad)
-        self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
+        #self.lightpos.value = (cos(time * scale) * rad, 60, 20 + sin(time * scale) * rad)
+        self.torus.value = [(0, 0, 20), (sin(time), 0, cos(time)), (12, 1, 0)]
+        self.sphere.value = (10 * cos(time), 0, 20, 5)
+        #self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
 
         self.vao.render(moderngl.TRIANGLE_FAN)
 
