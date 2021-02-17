@@ -33,12 +33,21 @@ class Raymarch(Example):
 
                 uniform float CameraDistance;
                 uniform vec3[2] Plane;
+                uniform vec3[3] Torus;
                 uniform vec4 Sphere;
                 uniform vec4 StepInfo;
                 uniform vec3 LightPos;
 
                 in vec2 v_pixpos;
                 out vec4 f_color;
+
+                float distance_to_torus(vec3 p)
+                {
+                    vec3 g = dot(p - Torus[0], Torus[1]) * Torus[1];
+                    vec3 pp = p - g;
+                    vec3 m = Torus[0] + normalize(pp - Torus[0]) * Torus[2].x;                    
+                    return length((p - m)) - Torus[2].y;
+                }
 
                 float distance_to_sphere(vec3 point)
                 {
@@ -54,8 +63,8 @@ class Raymarch(Example):
                 float distance(vec3 pos)
                 {
                     //return distance_to_plane(pos) - distance_to_sphere(pos);
-                    return min(distance_to_sphere(pos), distance_to_plane(pos));
-                    //return distance_to_plane(pos);
+                    //return min(distance_to_sphere(pos), distance_to_plane(pos));
+                    return distance_to_torus(pos);
                 }
 
                 float raymarch(vec3 pos, vec3 ray)
@@ -108,7 +117,7 @@ class Raymarch(Example):
                         //f_color = vec4(normal, 1);
                     }
                     else
-                        f_color = vec4(0,0,0,1);
+                        f_color = vec4(0,Plane[1].x,Plane[0].x,Sphere.x);
                 }
             ''',
         )
@@ -118,6 +127,9 @@ class Raymarch(Example):
 
         self.sphere = self.prog['Sphere']
         self.sphere.value = (0, 0, 50, 40)
+
+        self.torus = self.prog['Torus']
+        self.torus.value = [(0, -10, 50), (0, 0, -1), (30, 10, 0)]
 
         self.plane = self.prog['Plane']
         self.plane.value = [(0,0,50), (-.57, .57, -.57)]
@@ -144,7 +156,7 @@ class Raymarch(Example):
         rad = 50
         scale = .5
         c = cos(time) * pi/4
-        self.lightpos.value = (cos(time * scale) * rad, 0, 0)
+        self.lightpos.value = (cos(time * scale) * rad, 0, 50 + sin(time * scale) * rad)
         self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
 
         self.vao.render(moderngl.TRIANGLE_FAN)
