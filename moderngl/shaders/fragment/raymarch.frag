@@ -4,9 +4,22 @@
 #define MIN_DIST StepInfo.y
 #define SMIN_K 1
 
+struct TorusStruct
+{
+    vec3 center;
+    vec3 normal;
+    vec3 radii;
+};
+
+struct PlaneStruct
+{
+    vec3 point;
+    vec3 normal;
+};
+
 uniform float CameraDistance;
-uniform vec3[2] Plane;
-uniform vec3[3] Torus;
+uniform PlaneStruct Plane;
+uniform TorusStruct Torus;
 uniform vec4 Sphere;
 uniform vec4 StepInfo;
 uniform vec3 LightPos;
@@ -22,10 +35,10 @@ float smin(float a, float b, float k)
 
 float distance_to_torus(vec3 p)
 {
-    vec3 g = dot(p - Torus[0], Torus[1]) * Torus[1];
+    vec3 g = dot(p - Torus.center, Torus.normal) * Torus.normal;
     vec3 pp = p - g;
-    vec3 m = Torus[0] + normalize(pp - Torus[0]) * Torus[2].x;
-    return length((p - m)) - Torus[2].y;
+    vec3 m = Torus.center + normalize(pp - Torus.center) * Torus.radii.x;
+    return length((p - m)) - Torus.radii.y;
 }
 
 float distance_to_sphere(vec3 point)
@@ -36,14 +49,14 @@ float distance_to_sphere(vec3 point)
 float distance_to_plane(vec3 point)
 {
     //return 40 - point.z;
-    return dot (point - Plane[0], Plane[1]);
+    return dot (point - Plane.point, Plane.normal);
 }
 
 float distance(vec3 pos)
 {
     float dist = smin(distance_to_sphere(pos), distance_to_plane(pos), SMIN_K);
-    //dist = smin(dist, distance_to_torus(pos), SMIN_K);
-    dist = max(-dist, distance_to_torus(pos));
+    dist = smin(dist, distance_to_torus(pos), SMIN_K);
+    //dist = max(-dist, distance_to_torus(pos));
     return dist;
 }
 
@@ -98,5 +111,5 @@ void main()
         //f_color = vec4(normal, 1);
     }
     else
-        f_color = vec4(0,Plane[1].x,Plane[0].x,Sphere.x);
+        f_color = vec4(0,Plane.normal.x,Plane.point.x,Sphere.x);
 }

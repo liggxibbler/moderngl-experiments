@@ -12,6 +12,17 @@ with open(frag_path) as frag_file:
 with open(vert_path) as vert_file:
     shvertex = vert_file.read()
 
+class Torus:
+    def __init__(self):
+        self.center = None
+        self.normal = None
+        self.radii = None
+
+class Plane:
+    def __init__(self):
+        self.point = None
+        self.normal = None
+
 class Raymarch(Example):
     title = "Space Fillers"
     gl_version = (3, 3)
@@ -24,17 +35,28 @@ class Raymarch(Example):
             fragment_shader=shfragment,
         )
 
+        for x in self.prog:
+            print (x)
+
         self.screen_res = self.prog['ScreenRes']
         self.screen_res.value = (.4, .3)
 
         self.sphere = self.prog['Sphere']
         self.sphere.value = (0, 0, 20, 5)
 
-        self.torus = self.prog['Torus']
-        self.torus.value = [(0, 0, 20), (.707, 0, -.707), (10, 2, 0)]
+        self.torus = Torus()
+        self.torus.center = self.prog['Torus.center']
+        self.torus.center.value = (0, 0, 20)
+        self.torus.normal = self.prog['Torus.normal']
+        self.torus.normal.value = (.707, 0, -.707)
+        self.torus.radii = self.prog['Torus.radii']
+        self.torus.radii.value = (10, 2, 0)
 
-        self.plane = self.prog['Plane']
-        self.plane.value = [(0,-20,0), (0, 1, 0)]
+        self.plane = Plane()
+        self.plane.point = self.prog['Plane.point']
+        self.plane.point.value = (0,-20,0)
+        self.plane.normal = self.prog['Plane.normal']
+        self.plane.normal.value = (0, 1, 0)
 
         self.camera = self.prog['CameraDistance']
         self.camera.value = .3
@@ -59,7 +81,10 @@ class Raymarch(Example):
         scale = .33
         c = cos(time) * pi/4
         #self.lightpos.value = (cos(time * scale) * rad, 60, 20 + sin(time * scale) * rad)
-        self.torus.value = [(0, 0, 20), (sin(time), 0, cos(time)), (12, 5, 0)]
+        self.torus.center.value = (0, 0, 20)
+        self.torus.normal.value = (sin(time), 0, cos(time))
+        self.torus.radii.value = (12, 5, 0)
+        
         self.sphere.value = (0, 10 * cos(time), 20, 5)
         #self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
 
