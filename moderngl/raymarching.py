@@ -32,6 +32,7 @@ class Raymarch(Example):
                 #define MIN_DIST StepInfo.y
 
                 uniform float CameraDistance;
+                uniform vec3[2] Plane;
                 uniform vec4 Sphere;
                 uniform vec4 StepInfo;
                 uniform vec3 LightPos;
@@ -46,13 +47,15 @@ class Raymarch(Example):
 
                 float distance_to_plane(vec3 point)
                 {
-                    return point.y + 10;
+                    //return 40 - point.z;
+                    return dot (point - Plane[0], Plane[1]);
                 }
 
                 float distance(vec3 pos)
                 {
+                    //return distance_to_plane(pos) - distance_to_sphere(pos);
                     return min(distance_to_sphere(pos), distance_to_plane(pos));
-                    //return distance_to_sphere(pos);
+                    //return distance_to_plane(pos);
                 }
 
                 float raymarch(vec3 pos, vec3 ray)
@@ -99,9 +102,10 @@ class Raymarch(Example):
                         
                         if (distLight <= length(hitToLight))
                         {                            
-                            shade *= .33;
+                            shade *= .0;
                         }
                         f_color = vec4(vec3(shade), 1);
+                        //f_color = vec4(normal, 1);
                     }
                     else
                         f_color = vec4(0,0,0,1);
@@ -109,12 +113,14 @@ class Raymarch(Example):
             ''',
         )
 
-        #self.timme = self.prog['Time']
         self.screen_res = self.prog['ScreenRes']
         self.screen_res.value = (.4, .3)
 
         self.sphere = self.prog['Sphere']
-        self.sphere.value = (0, 0, 30, 20)
+        self.sphere.value = (0, 0, 50, 40)
+
+        self.plane = self.prog['Plane']
+        self.plane.value = [(0,0,50), (-.57, .57, -.57)]
 
         self.camera = self.prog['CameraDistance']
         self.camera.value = .1
@@ -125,25 +131,22 @@ class Raymarch(Example):
         self.lightpos = self.prog['LightPos']
         self.lightpos.value = (0, 0, 0)
 
-        #self.texture = self.load_texture_2d('buildings.jpg')
-        #self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
-
         vertices = np.array([-1, 1, -1, -1, 1, -1, 1, 1])
 
         self.vbo = self.ctx.buffer(vertices.astype('f4'))
-        #self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
         self.vao = self.ctx._vertex_array(self.prog, [(self.vbo, "2f", "in_vert")])
 
     def render(self, time, frame_time):
-        from math import sin, cos
+        from math import sin, cos, pi
 
         self.ctx.clear(0.0, 0.0, 0.0)
 
-        rad = 50
+        rad = 70
         scale = 1
         c = cos(time * scale) * rad
         s = sin(time * scale) * rad
-        self.lightpos.value = (c, 0, s + 30)
+        self.lightpos.value = (0, 0, 0)
+        self.plane.value = [(0,0,30), (cos(pi/4), sin(pi/4) * sin(time), sin(pi/4) * cos(time))]
 
         self.vao.render(moderngl.TRIANGLE_FAN)
 
