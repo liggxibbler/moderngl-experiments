@@ -61,7 +61,7 @@ class Raymarch(Example):
                 float raymarch(vec3 pos, vec3 ray)
                 {
                     float step = 0;
-                    float dist = 100000;
+                    float dist = MAX_STEP;
                     
                     while (step < MAX_STEP && dist > MIN_DIST)
                     {
@@ -141,12 +141,11 @@ class Raymarch(Example):
 
         self.ctx.clear(0.0, 0.0, 0.0)
 
-        rad = 70
-        scale = 1
-        c = cos(time * scale) * rad
-        s = sin(time * scale) * rad
-        self.lightpos.value = (0, 0, 0)
-        self.plane.value = [(0,0,30), (cos(pi/4), sin(pi/4) * sin(time), sin(pi/4) * cos(time))]
+        rad = 50
+        scale = .5
+        c = cos(time) * pi/4
+        self.lightpos.value = (cos(time * scale) * rad, 0, 0)
+        self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
 
         self.vao.render(moderngl.TRIANGLE_FAN)
 
