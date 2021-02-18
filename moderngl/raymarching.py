@@ -39,7 +39,7 @@ class Raymarch(Example):
             print (x)
 
         self.screen_res = self.prog['ScreenRes']
-        self.screen_res.value = (.4, .3, .3)
+        self.screen_res.value = (.4, .3, 1)
 
         self.sphere = self.prog['Sphere']
         self.sphere.value = (0, 0, 20, 5)
@@ -59,10 +59,10 @@ class Raymarch(Example):
         self.plane.normal.value = (0, 1, 0)
 
         self.stepinfo = self.prog['StepInfo']
-        self.stepinfo.value = (1000, .001, 0, 0)
+        self.stepinfo.value = (1000, .01, 0, 0)
 
         self.lightpos = self.prog['LightPos']
-        self.lightpos.value = (0, 10, 0)
+        self.lightpos.value = (0, 0, 0)
 
         self.cam_vert = self.prog['CameraVert']
         self.camera_rt = (1, 0, 0, 0)
@@ -110,9 +110,6 @@ class Raymarch(Example):
 
         self.ctx.clear(0.0, 0.0, 0.0)
 
-        rad = 40
-        scale = .33
-        c = cos(time) * pi/4
         #self.lightpos.value = (cos(time * scale) * rad, 60, 20 + sin(time * scale) * rad)
         self.torus.center.value = (0, 0, 20)
         #self.torus.normal.value = (sin(time), 0, cos(time))
@@ -122,8 +119,10 @@ class Raymarch(Example):
         #self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
 
         #self.rotate_camera_about_z(sin(time) * pi/2)
-        self.camera_pos = (0, 0, 10 * cos(time / 2), 1)
-        self.update_camera_value()
+        angle = time / 2
+        rad = 40 + 10 * cos(angle)
+        self.camera_pos = (rad * cos(angle) , 0, 20 + rad * sin(angle), 1)
+        self.rotate_camera_about_y(pi / 2  + angle)
 
         self.vao.render(moderngl.TRIANGLE_FAN)
 
