@@ -17,14 +17,13 @@ struct PlaneStruct
     vec3 normal;
 };
 
-uniform float CameraDistance;
 uniform PlaneStruct Plane;
 uniform TorusStruct Torus;
 uniform vec4 Sphere;
 uniform vec4 StepInfo;
 uniform vec3 LightPos;
 
-in vec2 v_pixpos;
+in vec3 v_pixpos;
 out vec4 f_color;
 
 float smin(float a, float b, float k)
@@ -76,7 +75,7 @@ float raymarch(vec3 pos, vec3 ray)
 
 void main()
 {
-    vec3 pos = vec3(v_pixpos, CameraDistance);
+    vec3 pos = v_pixpos;
     vec3 ray = normalize(pos);
 
     float step = raymarch(vec3(0), ray);
