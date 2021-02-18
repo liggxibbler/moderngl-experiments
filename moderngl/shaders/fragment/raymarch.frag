@@ -17,6 +17,7 @@ struct PlaneStruct
     vec3 normal;
 };
 
+uniform mat4x4 CameraFrag;
 uniform PlaneStruct Plane;
 uniform TorusStruct Torus;
 uniform vec4 Sphere;
@@ -76,17 +77,17 @@ float raymarch(vec3 pos, vec3 ray)
 void main()
 {
     vec3 pos = v_pixpos;
-    vec3 ray = normalize(pos);
+    vec3 ray = normalize(pos - CameraFrag[3].xyz);
 
-    float step = raymarch(vec3(0), ray);
+    float step = raymarch(CameraFrag[3].xyz, ray);
 
     if (step < MAX_STEP)
     {
-        vec3 hit = ray * step;
+        vec3 hit = CameraFrag[3].xyz + ray * step;
 
-        float dx = distance(hit + vec3(MIN_DIST, 0, 0));
-        float dy = distance(hit + vec3(0, MIN_DIST, 0));
-        float dz = distance(hit + vec3(0, 0, MIN_DIST));
+        float dx = distance(hit + MIN_DIST * CameraFrag[0].xyz);
+        float dy = distance(hit + MIN_DIST * CameraFrag[1].xyz);
+        float dz = distance(hit + MIN_DIST * CameraFrag[2].xyz);
         vec3 normal = normalize((vec3(dx, dy, dz) - distance(hit)) / MIN_DIST);
 
         vec3 hitToLight = LightPos - hit;

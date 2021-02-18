@@ -64,18 +64,21 @@ class Raymarch(Example):
         self.lightpos = self.prog['LightPos']
         self.lightpos.value = (0, 10, 0)
 
-        vertices = np.array([-1, 1, -1, -1, 1, -1, 1, 1])
-
-        self.vbo = self.ctx.buffer(vertices.astype('f4'))
-        self.vao = self.ctx._vertex_array(self.prog, [(self.vbo, "2f", "in_vert")])
-
-        self.camera = self.prog['Camera']
-        
+        self.cam_vert = self.prog['CameraVert']
         self.camera_rt = (1, 0, 0, 0)
         self.camera_up = (0, 1, 0, 0)
         self.camera_fd = (0, 0, 1, 0)
         self.camera_pos = (0, 0, 0, 1)
+
+        self.cam_frag = self.prog["CameraFrag"]
+        self.cam_frag.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
+
         self.update_camera_value()
+
+        vertices = np.array([-1, 1, -1, -1, 1, -1, 1, 1])
+
+        self.vbo = self.ctx.buffer(vertices.astype('f4'))
+        self.vao = self.ctx._vertex_array(self.prog, [(self.vbo, "2f", "in_vert")])
 
     def rotate_camera_about_y(self, angle):
         from math import cos, sin, pi        
@@ -98,8 +101,9 @@ class Raymarch(Example):
         self.camera_fd = (0, 0, 1, 0)
         self.update_camera_value()
 
-    def update_camera_value(self):
-        self.camera.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
+    def update_camera_value(self):        
+        self.cam_vert.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
+        self.cam_frag.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
 
     def render(self, time, frame_time):
         from math import sin, cos, pi
@@ -117,8 +121,8 @@ class Raymarch(Example):
         self.sphere.value = (0, 10 * cos(time), 20, 5)
         #self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
 
-        self.rotate_camera_about_z(sin(time) * pi/2)
-        self.camera_pos = (cos(time / 2), 0, 0, 1)
+        #self.rotate_camera_about_z(sin(time) * pi/2)
+        self.camera_pos = (0, 0, 10 * cos(time / 2), 1)
         self.update_camera_value()
 
         self.vao.render(moderngl.TRIANGLE_FAN)
