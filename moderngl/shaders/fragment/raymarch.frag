@@ -94,10 +94,21 @@ void main()
     {
         vec3 hit = CameraFrag[3].xyz + ray * step;
 
-        float dx = distance(hit + MIN_DIST * vec3(1,0,0));
-        float dy = distance(hit + MIN_DIST * vec3(0,1,0));
-        float dz = distance(hit + MIN_DIST * vec3(0,0,1));
-        vec3 normal = normalize((vec3(dx, dy, dz) - distance(hit)) / MIN_DIST);
+        float e = .01;
+
+        vec3 d1 = vec3(
+            distance(hit + vec3(e,0,0)),
+            distance(hit + vec3(0,e,0)),
+            distance(hit + vec3(0,0,e))
+        );
+
+        vec3 d2 = vec3(
+            distance(hit - vec3(e,0,0)),
+            distance(hit - vec3(0,e,0)),
+            distance(hit - vec3(0,0,e))
+        );
+
+        vec3 normal = normalize(d1 - d2);
 
         vec3 hitToLight = LightPos - hit;
         vec3 hitLightDir = normalize(hitToLight);
