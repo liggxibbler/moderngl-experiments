@@ -69,7 +69,7 @@ float distance(vec3 point)
     float dist = smin(distance_to_sphere(pos), distance_to_plane(pos), SMIN_K);
     dist = smin(dist, distance_to_torus(pos), SMIN_K);
     //dist = max(-dist, distance_to_torus(pos));
-    return dist;
+    return max(distance_to_box(pos), -distance_to_sphere(pos)) + (dist-dist);
 }
 
 float raymarch(vec3 pos, vec3 ray)
