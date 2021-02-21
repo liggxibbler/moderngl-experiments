@@ -52,7 +52,16 @@ float distance_to_plane(vec3 point)
     return dot (point - Plane.point, Plane.normal);
 }
 
-float distance(vec3 pos)
+float distance_to_box(vec3 point)
+{
+    vec3 center = vec3(0);
+    float side = 10.0f;
+    vec3 q = abs(point - center) - side;
+    float dist =  length(max(q, 0));
+    return dist + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+float distance(vec3 point)
 {
     float dist = smin(distance_to_sphere(pos), distance_to_plane(pos), SMIN_K);
     dist = smin(dist, distance_to_torus(pos), SMIN_K);
