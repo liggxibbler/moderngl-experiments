@@ -63,6 +63,8 @@ float distance_to_box(vec3 point)
 
 float distance(vec3 point)
 {
+    float factor = 30;
+    vec3 pos = mod(point, factor * 2) - factor;
     float dist = smin(distance_to_sphere(pos), distance_to_plane(pos), SMIN_K);
     dist = smin(dist, distance_to_torus(pos), SMIN_K);
     //dist = max(-dist, distance_to_torus(pos));
