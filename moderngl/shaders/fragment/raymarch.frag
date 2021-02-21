@@ -119,7 +119,7 @@ void main()
         float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
         vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
         float specular = clamp(dot(-ray, reflect), 0, 1);
-        float shade = diffuse + pow(specular, 64);
+        float shade = (diffuse + pow(specular, 64)) / sqrt(dot(hitToLight, hitToLight));
         
         //f_color = vec4(shade*hitLightDir, 1);
         
@@ -127,8 +127,8 @@ void main()
         {            
             shade = 0;
         }
-        f_color = vec4(vec3(shade), 1);
-        //f_color = vec4(normal, 1);
+        //f_color = vec4(vec3(shade * 60), 1);
+        f_color = vec4(abs(normal) * shade * 70, 1);
     }
     else
         f_color = vec4(0,Plane.normal.x,Plane.point.x,Sphere.x);
