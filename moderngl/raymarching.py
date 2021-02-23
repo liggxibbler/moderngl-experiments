@@ -18,11 +18,6 @@ class Torus:
         self.normal = None
         self.radii = None
 
-class Plane:
-    def __init__(self):
-        self.point = None
-        self.normal = None
-
 class Raymarch(Example):
     title = "Space Fillers"
     gl_version = (3, 3)
@@ -52,11 +47,8 @@ class Raymarch(Example):
         self.torus.radii = self.prog['Torus.radii']
         self.torus.radii.value = (10, 2, 0)
 
-        self.plane = Plane()
-        self.plane.point = self.prog['Plane.point']
-        self.plane.point.value = (0,-100,0)
-        self.plane.normal = self.prog['Plane.normal']
-        self.plane.normal.value = (0, 1, 0)
+        self.plane = self.prog['Plane']
+        self.plane.value = (0, 1, 0, -10)
 
         self.stepinfo = self.prog['StepInfo']
         self.stepinfo.value = (1000, .005, 0, 0)

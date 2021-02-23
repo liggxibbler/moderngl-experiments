@@ -11,14 +11,8 @@ struct TorusStruct
     vec3 radii;
 };
 
-struct PlaneStruct
-{
-    vec3 point;
-    vec3 normal;
-};
-
 uniform mat4x4 CameraFrag;
-uniform PlaneStruct Plane;
+uniform vec4 Plane;
 uniform TorusStruct Torus;
 uniform vec4 Sphere;
 uniform vec4 StepInfo;
@@ -42,21 +36,20 @@ float distance_to_torus(vec3 p)
     return length((p - m)) - Torus.radii.y;
 }
 
-float distance_to_sphere(vec3 point)
+float distance_to_sphere(vec3 point, float r)
 {
-    return length(point - Sphere.xyz) - Sphere.w;
+    return length(point) - r;
 }
 
-float distance_to_plane(vec3 point)
+float distance_to_plane(vec3 point, vec4 plane)
 {
-    //return 40 - point.z;
-    return dot (point - Plane.point, Plane.normal);
+    vec3 plane_intersect = vec3(0, plane.w, 0);
+    return dot (point - plane_intersect, plane.xyz);
 }
 
-float distance_to_box(vec3 point)
+float distance_to_box(vec3 point, vec3 side)
 {
-    vec3 center = vec3(0);
-    float side = 10.0f;
+    vec3 center = vec3(0);    
     vec3 q = abs(point - center) - side;
     float dist =  length(max(q, 0));
     return dist + min(max(q.x,max(q.y,q.z)),0.0);
@@ -67,9 +60,11 @@ float distance(vec3 point)
     float factor = 30;
     vec3 pos = mod(point, factor * 2) - factor;
     float dist = smin(distance_to_sphere(pos), distance_to_plane(pos), SMIN_K);
+    float dist = smin(distance_to_sphere(pos), distance_to_plane(pos, Plane), SMIN_K);
+    float dist = smin(distance_to_sphere(pos - Sphere.xyz, Sphere.w), distance_to_plane(pos, Plane), SMIN_K);
     dist = smin(dist, distance_to_torus(pos), SMIN_K);
     //dist = max(-dist, distance_to_torus(pos));
-    return max(distance_to_box(pos), -distance_to_sphere(pos)) + (dist-dist);
+    return min(distance_to_sphere(pos - Sphere.xyz, Sphere.w), distance_to_plane(pos, Plane)) + (dist-dist);
 }
 
 float raymarch(vec3 pos, vec3 ray)
@@ -154,5 +149,5 @@ void main()
         //f_color = vec4(abs(normal), 1);
     }
     else
-        f_color = vec4(0,Plane.normal.x,Plane.point.x,Sphere.x);
+        f_color = vec4(0,Plane.x,Plane.x,Plane.z);
 }
