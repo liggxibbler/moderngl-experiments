@@ -86,6 +86,48 @@ float raymarch(vec3 pos, vec3 ray)
     return step;
 }
 
+vec3 GetNormal(vec3 hit)
+{
+    vec2 e = vec2(.01, 0);
+
+    vec3 d1 = vec3(
+        distance(hit + e.xyy),
+        distance(hit + e.yxy),
+        distance(hit + e.yyx)
+    );
+
+    vec3 d2 = vec3(
+        distance(hit - e.xyy),
+        distance(hit - e.yxy),
+        distance(hit - e.yyx)
+    );
+
+    return normalize(d1 - d2);
+}
+float softshadow(vec3 hit, vec3 hitLightDir, float distToLight, float k)
+{
+    float step = 0;
+    float dist = MAX_STEP;
+    
+    float ph = 1e20;
+
+    float res = 1.0;
+
+    while (step < distToLight && dist > MIN_DIST)
+    {
+        dist = distance(hit + hitLightDir * step);
+        if (dist < MIN_DIST)
+            return 0.0;
+        float y = dist * dist / (2.0 * ph);
+        float d = sqrt(dist*dist - y*y);
+        res = min(res, k * d / max(0.0, step -y));
+        ph = dist;
+        step = step + dist;
+    }
+
+    return res;
+}
+
 void main()
 {
     vec3 pos = v_pixpos;
@@ -96,42 +138,20 @@ void main()
     if (step < MAX_STEP)
     {
         vec3 hit = CameraFrag[3].xyz + ray * step;
-
-        float e = .01;
-
-        vec3 d1 = vec3(
-            distance(hit + vec3(e,0,0)),
-            distance(hit + vec3(0,e,0)),
-            distance(hit + vec3(0,0,e))
-        );
-
-        vec3 d2 = vec3(
-            distance(hit - vec3(e,0,0)),
-            distance(hit - vec3(0,e,0)),
-            distance(hit - vec3(0,0,e))
-        );
-
-        vec3 normal = normalize(d1 - d2);
-
         vec3 hitToLight = LightPos - hit;
         vec3 hitLightDir = normalize(hitToLight);
-        vec3 offset = hit + normal * 2 * MIN_DIST;
-        vec3 offsetDir = normalize(LightPos - offset);
-        float distLight = raymarch(offset, offsetDir);
+        vec3 normal = GetNormal(hit);
+        float shadow = softshadow(hit + MIN_DIST * normal, hitLightDir, length(hitToLight), 5);
         
         float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
         vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
         float specular = clamp(dot(-ray, reflect), 0, 1);
-        float shade = (diffuse + pow(specular, 64)) / sqrt(dot(hitToLight, hitToLight));
+        float shade = diffuse + pow(specular, 64);
         
-        //f_color = vec4(shade*hitLightDir, 1);
-        
-        if (distLight <= length(hitToLight))
-        {            
-            shade = 0;
-        }
+        //f_color = vec4(shade*hitLightDir, 1);        
         //f_color = vec4(vec3(shade * 60), 1);
-        f_color = vec4(abs(normal) * shade * 70, 1);
+        f_color = vec4(vec3(shadow * shade), 1);
+        //f_color = vec4(abs(normal), 1);
     }
     else
         f_color = vec4(0,Plane.normal.x,Plane.point.x,Sphere.x);
