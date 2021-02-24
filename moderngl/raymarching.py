@@ -22,8 +22,23 @@ class Raymarch(Example):
     title = "Space Fillers"
     gl_version = (3, 3)
 
+    def init_keys(self):
+        self.keys = {}
+        self.keys[self.wnd.keys.W] = False
+        self.keys[self.wnd.keys.A] = False
+        self.keys[self.wnd.keys.S] = False
+        self.keys[self.wnd.keys.D] = False
+        self.keys[self.wnd.keys.Q] = False
+        self.keys[self.wnd.keys.E] = False
+    
+    def get_key(self, key):
+        if key in self.keys:
+            return self.keys[key]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.init_keys()
 
         self.prog = self.ctx.program(
             vertex_shader=shvertex,
@@ -54,13 +69,13 @@ class Raymarch(Example):
         self.stepinfo.value = (1000, .005, 0, 0)
 
         self.lightpos = self.prog['LightPos']
-        self.lightpos.value = (0, 15, 0)
+        self.lightpos.value = (25, 25, -25)
 
         self.cam_vert = self.prog['CameraVert']
         self.camera_rt = (1, 0, 0, 0)
         self.camera_up = (0, 1, 0, 0)
         self.camera_fd = (0, 0, 1, 0)
-        self.camera_pos = (0, 0, 0, 1)
+        self.camera_pos = (0, -3, -5, 1)
 
         self.cam_frag = self.prog["CameraFrag"]
         self.cam_frag.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
@@ -97,24 +112,77 @@ class Raymarch(Example):
         self.cam_vert.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
         self.cam_frag.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
 
+    def key_event(self, key, action, modifiers):
+        if action == self.wnd.keys.ACTION_PRESS:
+            if key in self.keys:
+                self.keys[key] = True
+        elif action == self.wnd.keys.ACTION_RELEASE:
+            if key in self.keys:
+                self.keys[key] = False
+    
+    def mouse_drag_event(self, x: int, y: int, dx: int, dy: int):
+        from math import sin, cos
+        if (self.wnd._mouse_buttons.left):
+            s = sin(-dx * .001)
+            c = cos(-dx * .001)            
+            print (self.camera_fd)
+            self.camera_fd = (
+                self.camera_fd[0] * c - self.camera_fd[2] * s,
+                0,
+                self.camera_fd[0] * s + self.camera_fd[2] * c,
+                0
+            )
+            self.camera_rt = (-self.camera_fd[2], 0, self.camera_fd[0], 0)
+            
+            print (self.camera_fd)
+            self.update_camera_value()
+
+    def handle_input(self):
+        dx = .1
+        
+        if self.keys[self.wnd.keys.W]:
+            pos = np.array(self.camera_pos) + dx * np.array(self.camera_fd)
+            pos[3] = 1
+            self.camera_pos = tuple(pos)
+            self.update_camera_value()
+        if self.keys[self.wnd.keys.S]:
+            pos = np.array(self.camera_pos) - dx * np.array(self.camera_fd)
+            pos[3] = 1
+            self.camera_pos = tuple(pos)
+            self.update_camera_value()
+        if self.keys[self.wnd.keys.A]:
+            pos = np.array(self.camera_pos) - dx * np.array(self.camera_rt)
+            pos[3] = 1
+            self.camera_pos = tuple(pos)
+            self.update_camera_value()
+        if self.keys[self.wnd.keys.D]:
+            pos = np.array(self.camera_pos) + dx * np.array(self.camera_rt)
+            pos[3] = 1
+            self.camera_pos = tuple(pos)
+            self.update_camera_value()
+        if self.keys[self.wnd.keys.Q]:
+            pos = np.array(self.camera_pos) + dx * np.array(self.camera_up)
+            pos[3] = 1
+            self.camera_pos = tuple(pos)
+            self.update_camera_value()
+        if self.keys[self.wnd.keys.E]:
+            pos = np.array(self.camera_pos) - dx * np.array(self.camera_up)
+            pos[3] = 1
+            self.camera_pos = tuple(pos)
+            self.update_camera_value()
+
+
     def render(self, time, frame_time):
         from math import sin, cos, pi
 
         self.ctx.clear(0.0, 0.0, 0.0)
 
-        self.torus.center.value = (0, 0, 0)
-        self.torus.normal.value = (0, 1, 0)
-        self.torus.radii.value = (12, 5, 0)
-        
-        self.sphere.value = (0, 0, 0, 12)
-        #self.plane.value = [(0,0,30), (0, -sin(c), -cos(c))]
+        self.handle_input()
 
-        #self.rotate_camera_about_z(sin(time) * pi/2)
-        angle = time / 5
-        rad = 100 #+ 10 * cos(angle)
-        self.camera_pos = (rad * cos(angle), 0, rad * sin(angle), 1)
-        self.rotate_camera_about_x(pi/2  + angle)
-        self.lightpos.value = (cos(angle) * rad, 0, sin(angle) * rad)
+        angle = time
+
+        rad = 50
+        self.lightpos.value = self.camera_pos[:3]
         self.vao.render(moderngl.TRIANGLE_FAN)
 
         #self.vao.release()
