@@ -1,8 +1,10 @@
 #version 330
 
+#define CAMERA_POS CameraFrag[3].xyz
 #define MAX_STEP StepInfo.x
 #define MIN_DIST StepInfo.y
 #define SMIN_K 1
+#define PI 3.14159265
 
 struct TorusStruct
 {
@@ -18,7 +20,7 @@ uniform vec4 Sphere;
 uniform vec4 StepInfo;
 uniform vec3 LightPos;
 
-in vec3 v_pixpos;
+in vec3 v_pixray;
 out vec4 f_color;
 
 float smin(float a, float b, float k)
@@ -27,13 +29,28 @@ float smin(float a, float b, float k)
     return mix(a, b, h) - k * h * (1.0 - h);
 }
 
-
 float distance_to_torus(vec3 p)
 {
     vec3 g = dot(p - Torus.center, Torus.normal) * Torus.normal;
     vec3 pp = p - g;
     vec3 m = Torus.center + normalize(pp - Torus.center) * Torus.radii.x;
     return length((p - m)) - Torus.radii.y;
+}
+
+float sdCone( in vec3 p, in vec2 c, float h )
+{
+  // c is the sin/cos of the angle, h is height
+  // Alternatively pass q instead of (c,h),
+  // which is the point at the base in 2D
+  vec2 q = h*vec2(c.x/c.y,-1.0);
+    
+  vec2 w = vec2( length(p.xz), p.y );
+  vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
+  vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
+  float k = sign( q.y );
+  float d = min(dot( a, a ),dot(b, b));
+  float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
+  return sqrt(d)*sign(s);
 }
 
 float distance_to_sphere(vec3 point, float r)
@@ -59,12 +76,15 @@ float distance(vec3 point)
 {
     float factor = 30;
     vec3 pos = mod(point, factor * 2) - factor;
-    float dist = smin(distance_to_sphere(pos), distance_to_plane(pos), SMIN_K);
-    float dist = smin(distance_to_sphere(pos), distance_to_plane(pos, Plane), SMIN_K);
     float dist = smin(distance_to_sphere(pos - Sphere.xyz, Sphere.w), distance_to_plane(pos, Plane), SMIN_K);
     dist = smin(dist, distance_to_torus(pos), SMIN_K);
     //dist = max(-dist, distance_to_torus(pos));
-    return min(distance_to_sphere(pos - Sphere.xyz, Sphere.w), distance_to_plane(pos, Plane)) + (dist-dist);
+    //return min(distance_to_box(pos, vec3(15, 15, 15)), distance_to_plane(point, Plane)) + (dist-dist);
+    float toCone = sdCone(point, vec2(sin(PI/6),cos(PI/6)), 2) + (dist - dist);
+    float toSphere = distance_to_sphere(point - vec3(-1.15/2, -2.1, 0), 1.15/2);
+    float toPlane = distance_to_plane(point, vec4(0, -1, 0, -2.1));
+    float hemisphere = max(toSphere, -toPlane);
+    return smin(hemisphere, toCone, 1);
 }
 
 float raymarch(vec3 pos, vec3 ray)
@@ -99,6 +119,7 @@ vec3 GetNormal(vec3 hit)
 
     return normalize(d1 - d2);
 }
+
 float softshadow(vec3 hit, vec3 hitLightDir, float distToLight, float k)
 {
     float step = 0;
@@ -123,20 +144,35 @@ float softshadow(vec3 hit, vec3 hitLightDir, float distToLight, float k)
     return res;
 }
 
+float shadow(vec3 hit, vec3 hitLightDir, float distToLight)
+{
+    float step = 0;
+    float dist = MAX_STEP;
+    float res = 1.0f;
+    while (step < distToLight && dist > MIN_DIST)
+    {
+        dist = distance(hit + hitLightDir * step);
+        if (dist < MIN_DIST)
+            return 0.0;
+        step = step + dist;
+    }
+    return res;
+}
+
 void main()
 {
-    vec3 pos = v_pixpos;
-    vec3 ray = normalize(pos - CameraFrag[3].xyz);
+    vec3 ray = normalize(v_pixray - CAMERA_POS);
 
-    float step = raymarch(CameraFrag[3].xyz, ray);
+    float step = raymarch(CAMERA_POS, ray);
 
     if (step < MAX_STEP)
     {
-        vec3 hit = CameraFrag[3].xyz + ray * step;
+        vec3 hit = CAMERA_POS + ray * step;
         vec3 hitToLight = LightPos - hit;
         vec3 hitLightDir = normalize(hitToLight);
         vec3 normal = GetNormal(hit);
-        float shadow = softshadow(hit + MIN_DIST * normal, hitLightDir, length(hitToLight), 5);
+        //float shadow = softshadow(hit + MIN_DIST * normal, hitLightDir, length(hitToLight), 10);
+        float shadow = shadow(hit + 2 * MIN_DIST * normal, hitLightDir, length(hitToLight));
         
         float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
         vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
