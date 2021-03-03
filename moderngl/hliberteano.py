@@ -206,4 +206,4 @@ class Fractal(Example):
         #self.vbo.release()
 
 if __name__ == '__main__':
-    Fractal.run()
+    Fractal.run((512,512))

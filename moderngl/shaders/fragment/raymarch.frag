@@ -20,6 +20,10 @@ uniform vec4 Sphere;
 uniform vec4 StepInfo;
 uniform vec3 LightPos;
 
+uniform int Iterations;
+uniform int Bailout;
+uniform float Power;
+
 in vec3 v_pixray;
 out vec4 f_color;
 
@@ -72,6 +76,32 @@ float distance_to_box(vec3 point, vec3 side)
     return dist + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
+float DE(vec3 pos) {
+	vec3 z = pos;
+	float dr = 1.0;
+	float r = 0.0;
+	for (int i = 0; i < Iterations ; i++)
+    {
+		r = length(z);
+		if (r>Bailout) break;
+		
+		// convert to polar coordinates
+		float theta = acos(z.z/r);
+		float phi = atan(z.y,z.x);
+		dr =  pow( r, Power-1.0)*Power*dr + 1.0;
+		
+		// scale and rotate the point
+		float zr = pow( r,Power);
+		theta = theta*Power;
+		phi = phi*Power;
+		
+		// convert back to cartesian coordinates
+		z = zr*vec3(sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta));
+		z+=pos;
+	}
+	return 0.5*log(r)*r/dr;
+}
+
 float distance(vec3 point)
 {
     float factor = 30;
@@ -84,7 +114,7 @@ float distance(vec3 point)
     float toSphere = distance_to_sphere(point - vec3(-1.15/2, -2.1, 0), 1.15/2);
     float toPlane = distance_to_plane(point, vec4(0, -1, 0, -2.1));
     float hemisphere = max(toSphere, -toPlane);
-    return smin(hemisphere, toCone, 1);
+    return DE(point) + toCone - toCone + hemisphere - hemisphere;
 }
 
 float raymarch(vec3 pos, vec3 ray)
@@ -177,7 +207,7 @@ void main()
         float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
         vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
         float specular = clamp(dot(-ray, reflect), 0, 1);
-        float shade = diffuse + pow(specular, 64);
+        float shade = diffuse + pow(specular, 7);
         
         //f_color = vec4(shade*hitLightDir, 1);        
         //f_color = vec4(vec3(shade * 60), 1);

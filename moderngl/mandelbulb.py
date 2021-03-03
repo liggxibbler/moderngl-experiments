@@ -3,7 +3,7 @@ import numpy as np
 import moderngl
 from example import Example
 
-frag_path = r"shaders\fragment\raymarch.frag"
+frag_path = r"shaders\fragment\mandelbulb.frag"
 vert_path = r"shaders\vertex\raymarch.vert"
 
 with open(frag_path) as frag_file:
@@ -11,12 +11,6 @@ with open(frag_path) as frag_file:
 
 with open(vert_path) as vert_file:
     shvertex = vert_file.read()
-
-class Torus:
-    def __init__(self):
-        self.center = None
-        self.normal = None
-        self.radii = None
 
 class Raymarch(Example):
     title = "Space Fillers"
@@ -30,6 +24,8 @@ class Raymarch(Example):
         self.keys[self.wnd.keys.D] = False
         self.keys[self.wnd.keys.Q] = False
         self.keys[self.wnd.keys.E] = False
+        self.keys[self.wnd.keys.Z] = False
+        self.keys[self.wnd.keys.C] = False
     
     def get_key(self, key):
         if key in self.keys:
@@ -51,34 +47,31 @@ class Raymarch(Example):
         self.screen_res = self.prog['ScreenRes']
         self.screen_res.value = (.4, .3, 1)
 
-        self.sphere = self.prog['Sphere']
-        self.sphere.value = (0, 0, 20, 5)
-
-        self.torus = Torus()
-        self.torus.center = self.prog['Torus.center']
-        self.torus.center.value = (0, 0, 20)
-        self.torus.normal = self.prog['Torus.normal']
-        self.torus.normal.value = (0, 0, 1)
-        self.torus.radii = self.prog['Torus.radii']
-        self.torus.radii.value = (10, 2, 0)
-
-        self.plane = self.prog['Plane']
-        self.plane.value = (0, 1, 0, -10)
-
         self.stepinfo = self.prog['StepInfo']
         self.stepinfo.value = (1000, .005, 0, 0)
 
         self.lightpos = self.prog['LightPos']
-        self.lightpos.value = (25, 25, -25)
+        self.lightpos.value = (0, 5, -10)
 
-        self.cam_vert = self.prog['CameraVert']
+        self.planepos = self.prog["PlanePos"]
+        self.planepos.value = (0,0,0)
+
         self.camera_rt = (1, 0, 0, 0)
         self.camera_up = (0, 1, 0, 0)
         self.camera_fd = (0, 0, 1, 0)
-        self.camera_pos = (0, -3, -5, 1)
+        self.camera_pos = (0, 0, -5, 1)
 
+        self.cam_vert = self.prog['CameraVert']
         self.cam_frag = self.prog["CameraFrag"]
-        self.cam_frag.value = (*self.camera_rt, *self.camera_up, *self.camera_fd, *self.camera_pos)
+        self.update_camera_value()        
+
+        self.iterations = self.prog['Iterations']
+        self.bailout = self.prog['Bailout']
+        self.power = self.prog['Power']
+
+        self.iterations.value = 10
+        self.bailout.value = 4
+        self.power.value = 8
 
 
         self.update_camera_value()
@@ -171,7 +164,12 @@ class Raymarch(Example):
             pos[3] = 1
             self.camera_pos = tuple(pos)
             self.update_camera_value()
-
+        if self.keys[self.wnd.keys.Z]:
+            temp = np.array(self.planepos.value) + dx * np.array(self.camera_fd[:3])
+            self.planepos.value = tuple(temp)
+        if self.keys[self.wnd.keys.C]:
+            temp = np.array(self.planepos.value) - dx * np.array(self.camera_fd[:3])
+            self.planepos.value = tuple(temp)
 
     def render(self, time, frame_time):
         from math import sin, cos, pi
@@ -180,12 +178,12 @@ class Raymarch(Example):
 
         self.handle_input()
 
-        time2 = time / 2.0
-        self.power.value = 8
+        time2 = time / 6.0
+        self.power.value = (time2 % 256)
 
         rad = 50
         #self.lightpos.value = (0,0,-10)#self.camera_pos[:3]
-        #self.lightpos.value = self.camera_pos[:3]
+        self.lightpos.value = self.camera_pos[:3]
         self.vao.render(moderngl.TRIANGLE_FAN)
 
         #self.vao.release()
