@@ -14,18 +14,13 @@ struct TorusStruct
 };
 
 uniform mat4x4 CameraFrag;
-uniform vec4 Plane;
-uniform TorusStruct Torus;
-uniform vec4 Sphere;
 uniform vec4 StepInfo;
 uniform vec3 LightPos;
 
-uniform int Iterations;
-uniform int Bailout;
-uniform float Power;
-
 in vec3 v_pixray;
 out vec4 f_color;
+
+// Operators
 
 float smin(float a, float b, float k)
 {    
@@ -33,12 +28,14 @@ float smin(float a, float b, float k)
     return mix(a, b, h) - k * h * (1.0 - h);
 }
 
-float distance_to_torus(vec3 p)
+// Distance functions
+
+float sdTorus(vec3 p, vec3 center, vec3 normal, vec3 radii)
 {
-    vec3 g = dot(p - Torus.center, Torus.normal) * Torus.normal;
+    vec3 g = dot(p - center, normal) * normal;
     vec3 pp = p - g;
-    vec3 m = Torus.center + normalize(pp - Torus.center) * Torus.radii.x;
-    return length((p - m)) - Torus.radii.y;
+    vec3 m = center + normalize(pp - center) * radii.x;
+    return length((p - m)) - radii.y;
 }
 
 float sdCone( in vec3 p, in vec2 c, float h )
@@ -57,18 +54,18 @@ float sdCone( in vec3 p, in vec2 c, float h )
   return sqrt(d)*sign(s);
 }
 
-float distance_to_sphere(vec3 point, float r)
+float sdSphere(vec3 point, float r)
 {
     return length(point) - r;
 }
 
-float distance_to_plane(vec3 point, vec4 plane)
+float sdPlane(vec3 point, vec4 plane)
 {
     vec3 plane_intersect = vec3(0, plane.w, 0);
     return dot (point - plane_intersect, plane.xyz);
 }
 
-float distance_to_box(vec3 point, vec3 side)
+float sdBox(vec3 point, vec3 side)
 {
     vec3 center = vec3(0);    
     vec3 q = abs(point - center) - side;
@@ -76,45 +73,19 @@ float distance_to_box(vec3 point, vec3 side)
     return dist + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
-float DE(vec3 pos) {
-	vec3 z = pos;
-	float dr = 1.0;
-	float r = 0.0;
-	for (int i = 0; i < Iterations ; i++)
-    {
-		r = length(z);
-		if (r>Bailout) break;
-		
-		// convert to polar coordinates
-		float theta = acos(z.z/r);
-		float phi = atan(z.y,z.x);
-		dr =  pow( r, Power-1.0)*Power*dr + 1.0;
-		
-		// scale and rotate the point
-		float zr = pow( r,Power);
-		theta = theta*Power;
-		phi = phi*Power;
-		
-		// convert back to cartesian coordinates
-		z = zr*vec3(sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta));
-		z+=pos;
-	}
-	return 0.5*log(r)*r/dr;
-}
+// Modifiers
+// None just yet
+
+// Raymarch
 
 float distance(vec3 point)
 {
-    float factor = 30;
-    vec3 pos = mod(point, factor * 2) - factor;
-    float dist = smin(distance_to_sphere(pos - Sphere.xyz, Sphere.w), distance_to_plane(pos, Plane), SMIN_K);
-    dist = smin(dist, distance_to_torus(pos), SMIN_K);
-    //dist = max(-dist, distance_to_torus(pos));
-    //return min(distance_to_box(pos, vec3(15, 15, 15)), distance_to_plane(point, Plane)) + (dist-dist);
-    float toCone = sdCone(point, vec2(sin(PI/6),cos(PI/6)), 2) + (dist - dist);
-    float toSphere = distance_to_sphere(point - vec3(-1.15/2, -2.1, 0), 1.15/2);
-    float toPlane = distance_to_plane(point, vec4(0, -1, 0, -2.1));
-    float hemisphere = max(toSphere, -toPlane);
-    return DE(point) + toCone - toCone + hemisphere - hemisphere;
+    //float factor = 4;
+    //vec3 pos = mod(point, factor * 2) - factor;
+    //float toSphere = sdSphere(pos, 2);
+    //float toSphere2 = sdBox(pos + vec3(2,0,0), vec3(1,1,1));
+    //return smin(toSphere, toSphere2, .4);
+    return min(min(min(min(min(min(sdSphere(point + vec3(7, 8, 9), 2),smin(sdSphere(point, 2),sdSphere(point, 4), 0.1)),sdSphere(point, 0.0)),smin(sdSphere(point, 4),sdSphere(point, 2), 0.2)),sdSphere(point, 2.0)),smin(sdSphere(point + vec3(1, 2, 3), 2),sdSphere(point + vec3(1, 2, 3), 4), 0.1)),sdSphere(point, 1.0));
 }
 
 float raymarch(vec3 pos, vec3 ray)
@@ -130,6 +101,8 @@ float raymarch(vec3 pos, vec3 ray)
 
     return step;
 }
+
+// Utility
 
 vec3 GetNormal(vec3 hit)
 {
@@ -149,6 +122,8 @@ vec3 GetNormal(vec3 hit)
 
     return normalize(d1 - d2);
 }
+
+// Shadow
 
 float softshadow(vec3 hit, vec3 hitLightDir, float distToLight, float k)
 {
@@ -189,10 +164,11 @@ float shadow(vec3 hit, vec3 hitLightDir, float distToLight)
     return res;
 }
 
+// Main
+
 void main()
 {
     vec3 ray = normalize(v_pixray - CAMERA_POS);
-
     float step = raymarch(CAMERA_POS, ray);
 
     if (step < MAX_STEP)
@@ -202,7 +178,7 @@ void main()
         vec3 hitLightDir = normalize(hitToLight);
         vec3 normal = GetNormal(hit);
         //float shadow = softshadow(hit + MIN_DIST * normal, hitLightDir, length(hitToLight), 10);
-        float shadow = shadow(hit + 2 * MIN_DIST * normal, hitLightDir, length(hitToLight));
+        float shadow = softshadow(hit + 2 * MIN_DIST * normal, hitLightDir, length(hitToLight), 10);
         
         float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
         vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
@@ -211,9 +187,9 @@ void main()
         
         //f_color = vec4(shade*hitLightDir, 1);        
         //f_color = vec4(vec3(shade * 60), 1);
-        f_color = vec4(vec3(shadow * shade), 1);
-        //f_color = vec4(abs(normal), 1);
+        //f_color = vec4(vec3(shadow * shade), 1);
+        f_color = vec4(abs(normal), 1);
     }
     else
-        f_color = vec4(0,Plane.x,Plane.x,Plane.z);
+        f_color = vec4(0,0,0,1);
 }
