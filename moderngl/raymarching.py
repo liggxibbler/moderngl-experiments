@@ -51,22 +51,8 @@ class Raymarch(Example):
         self.screen_res = self.prog['ScreenRes']
         self.screen_res.value = (.4, .3, 1)
 
-        self.sphere = self.prog['Sphere']
-        self.sphere.value = (0, 0, 20, 5)
-
-        self.torus = Torus()
-        self.torus.center = self.prog['Torus.center']
-        self.torus.center.value = (0, 0, 20)
-        self.torus.normal = self.prog['Torus.normal']
-        self.torus.normal.value = (0, 0, 1)
-        self.torus.radii = self.prog['Torus.radii']
-        self.torus.radii.value = (10, 2, 0)
-
-        self.plane = self.prog['Plane']
-        self.plane.value = (0, 1, 0, -10)
-
         self.stepinfo = self.prog['StepInfo']
-        self.stepinfo.value = (1000, .005, 0, 0)
+        self.stepinfo.value = (1000, 0.00390625, 0, 0)
 
         self.lightpos = self.prog['LightPos']
         self.lightpos.value = (25, 25, -25)
@@ -139,7 +125,7 @@ class Raymarch(Example):
             self.update_camera_value()
 
     def handle_input(self):
-        dx = .1
+        dx = .45
         
         if self.keys[self.wnd.keys.W]:
             pos = np.array(self.camera_pos) + dx * np.array(self.camera_fd)
@@ -180,12 +166,11 @@ class Raymarch(Example):
 
         self.handle_input()
 
-        time2 = time / 2.0
-        self.power.value = 8
+        time2 = time / 2.0        
 
         rad = 50
         #self.lightpos.value = (0,0,-10)#self.camera_pos[:3]
-        #self.lightpos.value = self.camera_pos[:3]
+        self.lightpos.value = tuple(self.camera_pos[:3])#tuple(-x for x in self.camera_pos[:3])
         self.vao.render(moderngl.TRIANGLE_FAN)
 
         #self.vao.release()

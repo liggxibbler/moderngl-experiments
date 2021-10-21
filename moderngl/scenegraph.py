@@ -105,19 +105,19 @@ from math import sqrt
 
 children = []
 
-children.append(TranslateNode("tx1", SphereNode("sphere", 1), (-10, 0, 0)))
-children.append(TranslateNode("tx2", TorusNode("torus", (0,0,0), (0,0,-1), (1,.2,0)), (-4, 0, 0)))
-children.append(ConeNode("cone", (.5, sqrt(3)/2), 1))
-children.append(PlaneNode("plane", (0, 1, 0, -4)))
-children.append(TranslateNode("tx5", BoxNode("box", (1,1,1)), (4, 0, 0)))
+children.append(TranslateNode("tx1", SphereNode("sphere", 10), (-50, 0, 0)))
+children.append(TranslateNode("tx2", TorusNode("torus", (0,0,0), (0,0,-1), (10, 2,0)), (-20, 0, 0)))
+children.append(ConeNode("cone", (.5, sqrt(3)/2), 10))
+children.append(PlaneNode("plane", (0, 1, 0, -20)))
+children.append(TranslateNode("tx5", BoxNode("box", (10,10,10)), (20, 0, 0)))
 
 base = MinNode("min", children)
 
-box = BoxNode("box2", (10, .2, .2))
+box = BoxNode("box2", (50, 2, 2))
 
-kkk = SoftMinNode("root", base, box, .4)
+kkk = SoftMinNode("root", base, box, 4)
 
-box2 = BoxNode("box3", (11, .22, .22))
+box2 = BoxNode("box3", (55, 2.2, 2.2))
 
 root = MaxNode("max", kkk , box2, [False, True])
 

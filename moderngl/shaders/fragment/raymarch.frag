@@ -6,13 +6,6 @@
 #define SMIN_K 1
 #define PI 3.14159265
 
-struct TorusStruct
-{
-    vec3 center;
-    vec3 normal;
-    vec3 radii;
-};
-
 uniform mat4x4 CameraFrag;
 uniform vec4 StepInfo;
 uniform vec3 LightPos;
@@ -80,12 +73,7 @@ float sdBox(vec3 point, vec3 side)
 
 float distance(vec3 point)
 {
-    //float factor = 4;
-    //vec3 pos = mod(point, factor * 2) - factor;
-    //float toSphere = sdSphere(pos, 2);
-    //float toSphere2 = sdBox(pos + vec3(2,0,0), vec3(1,1,1));
-    //return smin(toSphere, toSphere2, .4);
-    return min(min(min(min(min(min(sdSphere(point + vec3(7, 8, 9), 2),smin(sdSphere(point, 2),sdSphere(point, 4), 0.1)),sdSphere(point, 0.0)),smin(sdSphere(point, 4),sdSphere(point, 2), 0.2)),sdSphere(point, 2.0)),smin(sdSphere(point + vec3(1, 2, 3), 2),sdSphere(point + vec3(1, 2, 3), 4), 0.1)),sdSphere(point, 1.0));
+    return max(smin(min(min(min(min(sdSphere(point + vec3(50, 0, 0), 10),sdTorus(point + vec3(20, 0, 0), vec3(0, 0, 0), vec3(0, 0, -1), vec3(10, 2, 0))),sdCone(point, vec2(0.5, 0.8660254037844386), 10)),sdPlane(point, vec4(0, 1, 0, -20))),sdBox(point + vec3(-20, 0, 0), vec3(10, 10, 10))),sdBox(point, vec3(50, 2, 2)), 4),-sdBox(point, vec3(55, 2.2, 2.2)));
 }
 
 float raymarch(vec3 pos, vec3 ray)
@@ -178,7 +166,7 @@ void main()
         vec3 hitLightDir = normalize(hitToLight);
         vec3 normal = GetNormal(hit);
         //float shadow = softshadow(hit + MIN_DIST * normal, hitLightDir, length(hitToLight), 10);
-        float shadow = softshadow(hit + 2 * MIN_DIST * normal, hitLightDir, length(hitToLight), 10);
+        float shadow = shadow(hit + 2 * MIN_DIST * normal, hitLightDir, length(hitToLight));
         
         float diffuse = clamp(dot(hitLightDir, normal), 0, 1);
         vec3 reflect = normalize(2 * dot(hitLightDir, normal) * normal - hitLightDir);
@@ -187,8 +175,8 @@ void main()
         
         //f_color = vec4(shade*hitLightDir, 1);        
         //f_color = vec4(vec3(shade * 60), 1);
-        //f_color = vec4(vec3(shadow * shade), 1);
-        f_color = vec4(abs(normal), 1);
+        f_color = vec4(shadow * abs(normal) * shade, 1);
+        //f_color = vec4(abs(normal), 1);
     }
     else
         f_color = vec4(0,0,0,1);
