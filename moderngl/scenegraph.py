@@ -7,15 +7,19 @@ class NodeBase:
     def scribe(self) -> str:
         pass
 
+# operators
+
 class MinNode(NodeBase):
     def __init__(self, name : str, children : List[NodeBase]):
-        super(MinNode, self).__init__(name)
+        super().__init__(name)
         self.children = children
     
     def scribe(self) -> str:
-        if len(self.children) == 1:
+        if len(self.children) < 1:
+            raise
+        elif len(self.children) == 1:
             return self.children[0].scribe()
-        elif len(self.children) > 1:
+        else:
             ret = f"min({self.children[0].scribe()},{self.children[1].scribe()})"
             for c in self.children[2:]:
                 ret = f"min({ret},{c.scribe()})"
@@ -23,13 +27,38 @@ class MinNode(NodeBase):
 
 class SoftMinNode(NodeBase):
     def __init__(self, name : str, child1 : NodeBase, child2 : NodeBase, k : float):
-        super(SoftMinNode, self).__init__(name)
+        super().__init__(name)
         self.child1 = child1
         self.child2 = child2
         self.k = k
     
     def scribe(self) -> str:
         return f"smin({self.child1.scribe()},{self.child2.scribe()}, {self.k})"
+
+
+class MaxNode(NodeBase):
+    def __init__(self, name : str, child1 : NodeBase, child2 : NodeBase, negate : List[bool]):
+        super().__init__(name)
+        self.child1 = child1
+        self.child2 = child2
+        self.negate = negate
+    
+    def scribe(self) -> str:        
+        return f"max({'-' if self.negate[0] else ''}{self.child1.scribe()},{'-' if self.negate[1] else ''}{self.child2.scribe()})"
+
+# modifiers
+
+class TranslateNode(NodeBase):
+    def __init__(self, name : str, child : NodeBase, offset : tuple):
+        super().__init__(name)
+        self.offset = offset
+        self.child = child
+    
+    def scribe(self) -> str:
+        neg = tuple(-i for i in self.offset)
+        return self.child.scribe().replace("point", f"point + vec3{neg}")
+
+# primitives
 
 class SphereNode(NodeBase):
     def __init__(self, name : str, radius : float):
@@ -38,15 +67,6 @@ class SphereNode(NodeBase):
     
     def scribe(self) -> str:
         return f"sdSphere(point, {self.radius})"
-
-class TanslateNode(NodeBase):
-    def __init__(self, name : str, child : NodeBase, offset : tuple):
-        super(TanslateNode, self).__init__(name)
-        self.offset = offset
-        self.child = child
-    
-    def scribe(self) -> str:
-        return self.child.scribe().replace("point", f"point + vec3{self.offset}")
 
 class TorusNode(NodeBase):
     def __init__(self, name: str, center : tuple, normal : tuple, radii : tuple):
@@ -63,7 +83,7 @@ class ConeNode(NodeBase):
         self.c = c
         self.h = h
     def scribe(self) -> str:
-        return f"sdCone(point, vec2{self.c}, {self.h}"
+        return f"sdCone(point, vec2{self.c}, {self.h})"
 
 class PlaneNode(NodeBase):
     def __init__(self, name: str, plane : tuple):
@@ -79,25 +99,26 @@ class BoxNode(NodeBase):
     def scribe(self) -> str:
         return f"sdBox(point, vec3{self.sides})"
 
-children = [SphereNode(f"sphere{i}", i* 1.0) for i in range(3)]
-children.extend([
-    SoftMinNode("smin1", SphereNode("sp1", 2), SphereNode("sp2", 4), .1),
-    SoftMinNode("smin2", SphereNode("sp3", 4), SphereNode("sp4", 2), .2),
-    ])
+# tests
 
-children.append(
-    TanslateNode( "tx1",
-        SoftMinNode("smin3", SphereNode("sp10", 2), SphereNode("sp20", 4), .1),
-        (1,2,3)
-    )
-)
+from math import sqrt
 
-children.append(TanslateNode("tx2", SphereNode("sp100", 2), (7,8,9)))
+children = []
 
-import random
+children.append(TranslateNode("tx1", SphereNode("sphere", 1), (-10, 0, 0)))
+children.append(TranslateNode("tx2", TorusNode("torus", (0,0,0), (0,0,-1), (1,.2,0)), (-4, 0, 0)))
+children.append(ConeNode("cone", (.5, sqrt(3)/2), 1))
+children.append(PlaneNode("plane", (0, 1, 0, -4)))
+children.append(TranslateNode("tx5", BoxNode("box", (1,1,1)), (4, 0, 0)))
 
+base = MinNode("min", children)
 
-random.shuffle(children)
-root = MinNode("root", children)
+box = BoxNode("box2", (10, .2, .2))
+
+kkk = SoftMinNode("root", base, box, .4)
+
+box2 = BoxNode("box3", (11, .22, .22))
+
+root = MaxNode("max", kkk , box2, [False, True])
 
 print(root.scribe())
