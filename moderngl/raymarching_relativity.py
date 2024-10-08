@@ -47,10 +47,12 @@ def lorentz(v, c):
 
     v2 = speed * speed
     
-    return (1 + (gamma - 1) * v[0] * v[0] / v2, (gamma - 1) * v[0] * v[1] / v2, (gamma - 1) * v[0] * v[2] / v2, -gamma * v[0] / c,
+    l = np.array((1 + (gamma - 1) * v[0] * v[0] / v2, (gamma - 1) * v[0] * v[1] / v2, (gamma - 1) * v[0] * v[2] / v2, -gamma * v[0] / c,
              (gamma - 1) * v[1] * v[1] / v2, 1 + (gamma - 1) * v[1] * v[1] / v2, (gamma - 1) * v[1] * v[2] / v2, -gamma * v[1] / c,
              (gamma - 1) * v[2] * v[0] / v2, (gamma - 1) * v[2] * v[1] / v2, 1 + (gamma - 1) * v[2] * v[2] / v2, -gamma * v[2] / c,
-             -gamma * v[0] / c, -gamma * v[1] / c, -gamma * v[2] / c, gamma)
+             -gamma * v[0] / c, -gamma * v[1] / c, -gamma * v[2] / c, gamma))
+    
+    return l.reshape(4,4)
 
 class Raymarch(Example):
     title = "Relativity"
@@ -149,14 +151,20 @@ class Raymarch(Example):
         if self.keys[self.wnd.keys.Z]:
             current_boost = (current_boost[0], -boost_increment, current_boost[2], current_boost[3])
         
-        if current_boost is not (0,0,0,0):
-            self.boost.value = tuple(current_boost)
-        
         return current_boost
 
 
     def update_physics(self, input_boost, dt):
-        self.fourvel.value += np.array(input_boost) * dt
+        
+        if input_boost is not (0,0,0,0):
+            input_boost = np.array((input_boost[0], input_boost[1], input_boost[2], input_boost[3]))/self.fourvel.value[3]
+            next_boost = lorentz(-input_boost * dt, c)
+            transform_matrix = np.array(self.transformMatrix.value).reshape(4,4)
+            new_transform_matrix = np.matmul(transform_matrix, next_boost)
+            self.transformMatrix.value = new_transform_matrix.reshape(16,1)
+            self.boost.value = tuple(input_boost)
+            self.fourvel.value = np.matmul(new_transform_matrix, np.array((0,0,0,1)))
+
         self.position.value += np.array(self.fourvel.value) * dt
 
     def render(self, time, frame_time):
