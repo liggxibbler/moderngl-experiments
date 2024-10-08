@@ -6,6 +6,9 @@ from example import Example
 res_x = 1920
 res_y = 1080
 
+boost_increment = .45
+c = 1
+
 common_path = r"shaders\fragment\common.glsl"
 rocket_path = r"shaders\fragment\rocket.glsl"
 bufferb_path = r"shaders\fragment\bufferb.glsl"
@@ -126,41 +129,34 @@ class Raymarch(Example):
         self.iMouse.value = (x, y, 0)
 
     def handle_input(self):
-        boost_increment = .45
-        
+        current_boost = (0,0,0,0)
+
         if self.keys[self.wnd.keys.A]:
-            current_boost = self.boost.value
-            current_boost = (current_boost[0], current_boost[1], boost_increment, current_boost[3])
-            self.boost.value = tuple(current_boost)
+            current_boost = (current_boost[0], current_boost[1], boost_increment, current_boost[3])            
 
         if self.keys[self.wnd.keys.D]:
-            current_boost = self.boost.value
-            current_boost = (current_boost[0], current_boost[1], -boost_increment, current_boost[3])
-            self.boost.value = tuple(current_boost)
+            current_boost = (current_boost[0], current_boost[1], -boost_increment, current_boost[3])            
 
         if self.keys[self.wnd.keys.W]:
-            current_boost = self.boost.value
-            current_boost = (boost_increment, current_boost[1], current_boost[2], current_boost[3])
-            self.boost.value = tuple(current_boost)
+            current_boost = (boost_increment, current_boost[1], current_boost[2], current_boost[3])            
 
         if self.keys[self.wnd.keys.S]:
-            current_boost = self.boost.value
             current_boost = (-boost_increment, current_boost[1], current_boost[2], current_boost[3])
-            self.boost.value = tuple(current_boost)
         
         if self.keys[self.wnd.keys.Q]:
-            current_boost = self.boost.value
             current_boost = (current_boost[0], boost_increment, current_boost[2], current_boost[3])
-            self.boost.value = tuple(current_boost)
 
         if self.keys[self.wnd.keys.Z]:
-            current_boost = self.boost.value
             current_boost = (current_boost[0], -boost_increment, current_boost[2], current_boost[3])
+        
+        if current_boost is not (0,0,0,0):
             self.boost.value = tuple(current_boost)
+        
+        return current_boost
 
 
-    def update_physics(self, dt):
-        self.fourvel.value += np.array(self.boost.value) * dt
+    def update_physics(self, input_boost, dt):
+        self.fourvel.value += np.array(input_boost) * dt
         self.position.value += np.array(self.fourvel.value) * dt
 
     def render(self, time, frame_time):
@@ -170,8 +166,8 @@ class Raymarch(Example):
         
         self.iTimeDelta.value = frame_time        
         
-        self.handle_input()
-        self.update_physics(frame_time)
+        current_boost = self.handle_input()
+        self.update_physics(current_boost, frame_time)
 
         time2 = time / 2.0        
 
